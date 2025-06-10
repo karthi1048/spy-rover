@@ -1,0 +1,93 @@
+import RPi.GPIO as GPIO
+import time
+import pyrebase
+
+# Firebase configuration
+firebase_config = {
+    "apiKey": "YOUR_API_KEY",
+    "authDomain": "YOUR_PROJECT.firebaseapp.com",
+    "databaseURL": "https://YOUR_PROJECT.firebaseio.com",
+    "storageBucket": "YOUR_PROJECT.appspot.com"
+}
+
+# Setup Firebase
+firebase = pyrebase.initialize_app(firebase_config)
+db = firebase.database()
+
+# Motor control pins
+IN1 = 23
+IN2 = 24
+IN3 = 25
+IN4 = 22
+
+# Inductive sensor pin
+SENSOR_PIN = 14
+
+# GPIO setup
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(IN1, GPIO.OUT)
+GPIO.setup(IN2, GPIO.OUT)
+GPIO.setup(IN3, GPIO.OUT)
+GPIO.setup(IN4, GPIO.OUT)
+GPIO.setup(SENSOR_PIN, GPIO.IN)
+
+def stop():
+    GPIO.output(IN1, 0)
+    GPIO.output(IN2, 0)
+    GPIO.output(IN3, 0)
+    GPIO.output(IN4, 0)
+
+def forward():
+    GPIO.output(IN1, 1)
+    GPIO.output(IN2, 0)
+    GPIO.output(IN3, 1)
+    GPIO.output(IN4, 0)
+
+def reverse():
+    GPIO.output(IN1, 0)
+    GPIO.output(IN2, 1)
+    GPIO.output(IN3, 0)
+    GPIO.output(IN4, 1)
+
+def right():
+    GPIO.output(IN1, 1)
+    GPIO.output(IN2, 0)
+    GPIO.output(IN3, 0)
+    GPIO.output(IN4, 1)
+
+def left():
+    GPIO.output(IN1, 0)
+    GPIO.output(IN2, 1)
+    GPIO.output(IN3, 1)
+    GPIO.output(IN4, 0)
+
+# Main loop
+try:
+    print("Car control started...")
+    while True:
+        sensor_state = GPIO.input(SENSOR_PIN)
+
+        if sensor_state == 0:  # Change to 1 if sensor gives HIGH on detection
+            print("Obstacle detected by inductive sensor! Stopping car.")
+            stop()
+        else:
+            command = db.child("car").child("control").get().val()
+            if command == 1:
+                forward()
+            elif command == 2:
+                reverse()
+            elif command == 3:
+                right()
+            elif command == 4:
+                left()
+            else:
+                stop()
+
+        time.sleep(0.1)
+
+except KeyboardInterrupt:
+    print("\nStopping car...")
+    GPIO.cleanup()
+
+
+cc
